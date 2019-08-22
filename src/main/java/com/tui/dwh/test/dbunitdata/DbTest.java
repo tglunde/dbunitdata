@@ -222,7 +222,7 @@ public class DbTest extends TestCase {
             } while (rs.next());
             assertTrue("Expected ResultSet is not empty.", Boolean.FALSE);
         } else {
-            System.out.println("Expected ResultSet is tempty.");
+            System.out.println("Expected ResultSet is empty.");
         }
     }
 
