@@ -1,28 +1,17 @@
 package com.tui.dwh.test.dbunitdata;
 
-import junit.framework.Test;
-import junit.framework.TestResult;
-import junit.framework.TestSuite;
-import org.flywaydb.core.Flyway;
 import org.junit.internal.TextListener;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
 
 @SpringBootApplication
 public class DbUnitApp implements CommandLineRunner {
@@ -56,13 +45,13 @@ public class DbUnitApp implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		DbTest.dbtExecutable = this.dbtExecutable;
-		DbTest.dbtConfig = this.dbtConfig;
-		DbTest.dbtModelMart = this.dbtModelMart;
-		DbTest.dbtModelCore = this.dbtModelCore;
-		DbTest.dbtProjectDir = this.dbtProjectDir;
-		DbTest.testDirectory = this.testDirectory;
-		DbTest.ds = jdbcTemplate.getDataSource();
+		DbTest.DBT_EXECUTABLE = this.dbtExecutable;
+		DbTest.DBT_CONFIG = this.dbtConfig;
+		DbTest.DBT_MODEL_MART = this.dbtModelMart;
+		DbTest.DBT_MODEL_CORE = this.dbtModelCore;
+		DbTest.DBT_PROJECT_DIR = this.dbtProjectDir;
+		DbTest.TEST_DIRECTORY = this.testDirectory;
+		DbTest.DATA_SOURCE = jdbcTemplate.getDataSource();
 		JUnitCore jUnitCore = new JUnitCore();
 		jUnitCore.addListener(new TextListener(System.out));
 		Result result = jUnitCore.run(DbTest.class);

@@ -12,15 +12,13 @@ import org.dbunit.dataset.xml.FlatXmlDataSetBuilder;
 import org.dbunit.ext.postgresql.PostgresqlDataTypeFactory;
 import org.dbunit.operation.DatabaseOperation;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.io.*;
@@ -39,20 +37,22 @@ public class DbTest extends TestCase {
 
     private static final Logger LOG = LoggerFactory.getLogger(DbTest.class);
 
-    public static String testDirectory = "unittest";
-    public static String dbtExecutable = "dbt";
-    public static String dbtConfig = "dbt_project.yml";
-    public static String dbtProfile = "profiles.yml";
-    public static String dbtModelCore = "+core";
-    public static String dbtModelMart = "mart";
-    public static String dbtProjectDir = "d:/project/campaign";
-    public static DataSource ds = null;
+    public static String TEST_DIRECTORY = "unittest";
+    public static String DBT_EXECUTABLE = "dbt";
+    public static String DBT_CONFIG = "dbt_project.yml";
+    public static String DBT_PROFILE = "profiles.yml";
+    public static String DBT_MODEL_CORE = "+core";
+    public static String DBT_MODEL_MART = "mart";
+    public static String DBT_PROJECT_DIR = "d:/project/campaign";
+    public static DataSource DATA_SOURCE = null;
+    public static List<File> SRC_DS_LIST = new ArrayList<>();
+    public static List<File> SRC_SCRIPT_LIST = new ArrayList<>();
 
     @Parameterized.Parameters
     public static Collection<Object[]> makeTests() {
-        File parentFile = new File(testDirectory);
+        File parentFile = new File(TEST_DIRECTORY);
         if(!parentFile.isDirectory()) {
-            throw new RuntimeException("Parent directory " + testDirectory + " does not resolve to a directory.");
+            throw new RuntimeException("Parent directory " + TEST_DIRECTORY + " does not resolve to a directory.");
         }
         Collection<Object[]> resultList = new ArrayList<>();
         for(File subDirectory : parentFile.listFiles(File::isDirectory)) {
@@ -79,17 +79,17 @@ public class DbTest extends TestCase {
                     }
                 }
             }
+            DbTest.SRC_DS_LIST = dataSetList;
+            DbTest.SRC_SCRIPT_LIST = initList;
+
             for (File aFile : subDirectory.listFiles(File::isDirectory)) {
                 if (!aFile.getName().equalsIgnoreCase("dataset")
-//                        && "M7521_R15_2".equals(aFile.getName())
+                        //&& "M7364_R1".equals(aFile.getName())
                 ) {
                     List<Object> parameters = new ArrayList<>();
                     String testName = suiteName + ":" + aFile.getName();
-                    parameters.add(DbTest.ds);
                     parameters.add(testName);
-                    parameters.add(dataSetList);
                     parameters.add(new File(aFile.getAbsolutePath() + File.separatorChar + "expected.dml"));
-                    parameters.add(initList);
                     List<File> coreFiles = new ArrayList<>();
                     for (File initFile : aFile.listFiles(File::isFile)) {
                         if (!initFile.getName().equalsIgnoreCase("expected.dml")) {
@@ -105,27 +105,21 @@ public class DbTest extends TestCase {
         return resultList;
     }
 
-    private DataSource dataSource;
-    private List<File> dataSetList = new ArrayList<>();
     private File expectedSet = null;
-    private List<File> initSourceScriptList = new ArrayList<>();
     private List<File> initCoreScriptList = new ArrayList<>();
 
-    public DbTest(DataSource dataSource, String name, List<File> dataSetList, File expectedSet, List<File> initSourceScriptList, List<File> initCoreScriptList) {
+    public DbTest(String name, File expectedSet, List<File> initCoreScriptList) {
         super(name);
-        this.dataSource = dataSource;
-        this.dataSetList = dataSetList;
         this.expectedSet = expectedSet;
-        this.initSourceScriptList = initSourceScriptList;
         this.initCoreScriptList = initCoreScriptList;
     }
 
     public boolean addDataSet(File file) {
-        return dataSetList.add(file);
+        return SRC_DS_LIST.add(file);
     }
 
     public boolean addInitSourceScript(File file) {
-        return initSourceScriptList.add(file);
+        return SRC_SCRIPT_LIST.add(file);
     }
 
     public boolean addInitCoreScript(File file) {
@@ -136,12 +130,13 @@ public class DbTest extends TestCase {
         this.expectedSet = expectedSet;
     }
 
-    @Before
-    public void prepare() throws Exception {
-        LOG.warn("Prepare DbTest " + getName());
+    @BeforeClass
+    public static void prepare() throws Exception {
+/*
+        LOG.warn("Prepare DbTest - R-Schema");
         IDatabaseConnection connection = null;
         try {
-            connection = new DatabaseConnection( ds.getConnection());
+            connection = new DatabaseConnection( DATA_SOURCE.getConnection());
 
             connection.getConfig().setProperty(DatabaseConfig.FEATURE_QUALIFIED_TABLE_NAMES, Boolean.TRUE);
             connection.getConfig().setProperty(DatabaseConfig.FEATURE_CASE_SENSITIVE_TABLE_NAMES, Boolean.FALSE);
@@ -151,7 +146,7 @@ public class DbTest extends TestCase {
             connection.getConfig().setProperty(DatabaseConfig.PROPERTY_FETCH_SIZE, 10000);
 
             List<IDataSet> dataSets = new ArrayList<>();
-            for(File dataSetFile : this.dataSetList) {
+            for(File dataSetFile : DbTest.SRC_DS_LIST) {
                 dataSets.add(prepareDataSet(dataSetFile));
             }
             CompositeDataSet compositeDataSet = new CompositeDataSet(dataSets.toArray(new IDataSet[0]));
@@ -163,36 +158,41 @@ public class DbTest extends TestCase {
                 connection.close();
         }
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DATA_SOURCE.getConnection()) {
+            conn.setAutoCommit(false);
             ScriptRunner runner = new ScriptRunner(conn, false, true);
             //initializing R
-            for(File initScriptFile : this.initSourceScriptList) {
+            for(File initScriptFile : SRC_SCRIPT_LIST) {
                 runner.runScript(new BufferedReader( new FileReader(initScriptFile)));
             }
+            conn.commit();
         }
+
+        //running dbt -m core to build core tables
+        String[] commandCore = {DBT_EXECUTABLE, "run", "-m", DBT_MODEL_CORE};
+        childProcess(commandCore, DBT_PROJECT_DIR);
+*/
+
     }
 
     @Test
     public void execute() throws Exception {
         LOG.warn("Execute test " + super.getName());
-        //running dbt -m core to build core tables
 
-        String[] commandCore = { dbtExecutable, "run", "-m", dbtModelCore };
-        childProcess(commandCore, dbtProjectDir);
-
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DATA_SOURCE.getConnection()) {
             ScriptRunner runner = new ScriptRunner(conn, false, true);
             //initializing Core
             for(File scriptFile : this.initCoreScriptList) {
                 runner.runScript(new BufferedReader( new FileReader(scriptFile)));
             }
+            conn.commit();
         }
 
         //running dbt -m mart to build final output
-        String[] commandMart = { dbtExecutable, "run", "-m", dbtModelMart };
-        childProcess(commandMart, dbtProjectDir);
+        String[] commandMart = {DBT_EXECUTABLE, "run", "-m", DBT_MODEL_MART};
+        childProcess(commandMart, DBT_PROJECT_DIR);
 
-        try (Connection con = dataSource.getConnection()) {
+        try (Connection con = DATA_SOURCE.getConnection()) {
             ResultSet expectedRS = con.createStatement().executeQuery(readFile(this.expectedSet));
             assertExpectedEmpty(expectedRS);
             expectedRS.close();
@@ -230,7 +230,7 @@ public class DbTest extends TestCase {
         return new String(Files.readAllBytes(file.toPath()));
     }
 
-    private void childProcess(String[] command, String workdir) throws Exception {
+    private static void childProcess(String[] command, String workdir) throws Exception {
         Process process = new ProcessBuilder()
                 .inheritIO()
                 .command(command)
@@ -242,12 +242,7 @@ public class DbTest extends TestCase {
         }
     }
 
-    @After
-    public void tearDown() {
-
-    }
-
-    private IDataSet prepareDataSet(File dataSetFile) throws SQLException, DatabaseUnitException, IOException {
+    private static IDataSet prepareDataSet(File dataSetFile) throws SQLException, DatabaseUnitException, IOException {
         FlatXmlDataSetBuilder builder = new FlatXmlDataSetBuilder();
         builder.setColumnSensing(true);
         return builder.build(dataSetFile);
