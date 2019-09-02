@@ -52,6 +52,8 @@ public class DbUnitApp implements CommandLineRunner {
 		DbTest.DBT_PROJECT_DIR = this.dbtProjectDir;
 		DbTest.TEST_DIRECTORY = this.testDirectory;
 		DbTest.DATA_SOURCE = jdbcTemplate.getDataSource();
+		DbTest.makeTests();
+		DbTest.prepare();
 		JUnitCore jUnitCore = new JUnitCore();
 		jUnitCore.addListener(new TextListener(System.out));
 		Result result = jUnitCore.run(DbTest.class);

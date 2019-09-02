@@ -130,9 +130,7 @@ public class DbTest extends TestCase {
         this.expectedSet = expectedSet;
     }
 
-    @BeforeClass
     public static void prepare() throws Exception {
-/*
         LOG.warn("Prepare DbTest - R-Schema");
         IDatabaseConnection connection = null;
         try {
@@ -171,8 +169,6 @@ public class DbTest extends TestCase {
         //running dbt -m core to build core tables
         String[] commandCore = {DBT_EXECUTABLE, "run", "-m", DBT_MODEL_CORE};
         childProcess(commandCore, DBT_PROJECT_DIR);
-*/
-
     }
 
     @Test
